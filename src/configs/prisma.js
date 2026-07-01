@@ -1,14 +1,15 @@
 const { PrismaClient } = require("@prisma/client");
+const { PrismaPg } = require("@prisma/adapter-pg");
+const { Pool } = require("pg");
 
-// Prefer Neon-specific env var if present, otherwise fall back to DATABASE_URL
-const runtimeUrl = process.env.DATABASE_URL_NEON || process.env.DATABASE_URL;
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
 
-const clientOptions = {};
-if (runtimeUrl) {
-	clientOptions.adapter = { url: runtimeUrl };
-}
+const adapter = new PrismaPg(pool);
 
-const prisma = new PrismaClient(clientOptions);
+const prisma = new PrismaClient({
+  adapter,
+});
 
 module.exports = prisma;
-

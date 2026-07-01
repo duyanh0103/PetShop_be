@@ -6,6 +6,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.listen(3000, () => {
-  console.log("Server running at port 3000");
+app.get("/", (req, res) => {
+    res.json({
+        message: "PetShop API is running..."
+    });
 });
+
+module.exports = app;
