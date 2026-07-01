@@ -9,19 +9,14 @@ datasource db {
 enum Role {
   SUPER_ADMIN
   ADMIN
-  STAFF
   CUSTOMER
 }
 
 model User {
   id        String   @id @default(uuid())
   username  String   @unique
-  email     String   @unique
   password  String
-  fullName  String
   role      Role     @default(CUSTOMER)
-  isActive  Boolean  @default(true)
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

@@ -3,8 +3,15 @@
 import "dotenv/config";
 import { defineConfig } from "prisma/config";
 
-// Prefer Neon-specific env var if present
-const datasourceUrl = process.env.DATABASE_URL_NEON || process.env.DATABASE_URL;
+const datasourceUrl = process.env.DIRECT_URL || process.env.DATABASE_URL;
+
+function withoutChannelBinding(url?: string) {
+  if (!url) return url;
+
+  const parsed = new URL(url);
+  parsed.searchParams.delete("channel_binding");
+  return parsed.toString();
+}
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
@@ -12,6 +19,7 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: datasourceUrl,
+    // Prisma CLI commands work best against Neon's direct endpoint.
+    url: withoutChannelBinding(datasourceUrl),
   },
 });

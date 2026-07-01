@@ -1,15 +1,11 @@
 const express = require("express");
-const cors = require("cors");
+
+const authRoute = require("./modules/auth/auth.route");
 
 const app = express();
 
-app.use(cors());
 app.use(express.json());
 
-app.get("/", (req, res) => {
-    res.json({
-        message: "PetShop API is running..."
-    });
-});
+app.use("/api/auth", authRoute);
 
 module.exports = app;
