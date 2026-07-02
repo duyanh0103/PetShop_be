@@ -64,6 +64,20 @@ class AuthService {
       token,
     };
   }
+  async getCurrentUser(userId) {
+    const user = await authRepository.findById(userId);
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    return {
+      id: user.id,
+      username: user.username,
+      role: user.role,
+      createdAt: user.createdAt,
+    };
+  }
 }
 
 module.exports = new AuthService();

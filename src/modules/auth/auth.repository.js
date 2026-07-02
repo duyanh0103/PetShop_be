@@ -12,6 +12,13 @@ class AuthRepository {
       data,
     });
   }
+  async findById(id) {
+    return prisma.user.findUnique({
+      where: {
+        id,
+      },
+    });
+  }
 }
 
 module.exports = new AuthRepository();

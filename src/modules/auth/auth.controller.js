@@ -30,6 +30,20 @@ class AuthController {
       });
     }
   }
+  async getCurrentUser(req, res) {
+    try {
+      const user = await authService.getCurrentUser(req.user.id);
+
+      return res.status(200).json({
+        message: "Get current user successfully",
+        data: user,
+      });
+    } catch (error) {
+      return res.status(404).json({
+        message: error.message,
+      });
+    }
+  }
 }
 
 module.exports = new AuthController();
