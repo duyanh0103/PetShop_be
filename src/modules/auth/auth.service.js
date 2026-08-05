@@ -3,13 +3,14 @@ const { Role } = require("@prisma/client");
 
 const authRepository = require("./auth.repository");
 const { signToken } = require("../../utils/jwt");
+const { ConflictError, UnauthorizedError, NotFoundError } = require("../../utils/errors");
 
 class AuthService {
   async register(data) {
     const existedUser = await authRepository.findByUsername(data.username);
 
     if (existedUser) {
-      throw new Error("Username already exists");
+      throw new ConflictError("Username already exists");
     }
 
     const hashedPassword = await bcrypt.hash(data.password, 10);
@@ -40,13 +41,13 @@ class AuthService {
     const user = await authRepository.findByUsername(data.username);
 
     if (!user) {
-      throw new Error("Invalid username or password");
+      throw new UnauthorizedError("Invalid username or password");
     }
 
     const isMatch = await bcrypt.compare(data.password, user.password);
 
     if (!isMatch) {
-      throw new Error("Invalid username or password");
+      throw new UnauthorizedError("Invalid username or password");
     }
 
     const token = signToken({
@@ -68,7 +69,7 @@ class AuthService {
     const user = await authRepository.findById(userId);
 
     if (!user) {
-      throw new Error("User not found");
+      throw new NotFoundError("User not found");
     }
 
     return {

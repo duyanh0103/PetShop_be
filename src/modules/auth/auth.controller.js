@@ -1,7 +1,7 @@
 const authService = require("./auth.service");
 
 class AuthController {
-  async register(req, res) {
+  async register(req, res, next) {
     try {
       const result = await authService.register(req.body);
 
@@ -10,13 +10,11 @@ class AuthController {
         data: result,
       });
     } catch (error) {
-      return res.status(400).json({
-        message: error.message,
-      });
+      return next(error);
     }
   }
 
-  async login(req, res) {
+  async login(req, res, next) {
     try {
       const result = await authService.login(req.body);
 
@@ -25,12 +23,11 @@ class AuthController {
         data: result,
       });
     } catch (error) {
-      return res.status(401).json({
-        message: error.message,
-      });
+      return next(error);
     }
   }
-  async getCurrentUser(req, res) {
+
+  async getCurrentUser(req, res, next) {
     try {
       const user = await authService.getCurrentUser(req.user.id);
 
@@ -39,9 +36,7 @@ class AuthController {
         data: user,
       });
     } catch (error) {
-      return res.status(404).json({
-        message: error.message,
-      });
+      return next(error);
     }
   }
 }

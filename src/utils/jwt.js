@@ -1,6 +1,12 @@
 const jwt = require("jsonwebtoken");
 
-const JWT_SECRET = process.env.JWT_SECRET || "secret_key";
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  throw new Error(
+    "JWT_SECRET is not set. Define it in your .env file before starting the server."
+  );
+}
 
 function signToken(payload) {
   return jwt.sign(payload, JWT_SECRET, {
