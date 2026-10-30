@@ -10,7 +10,7 @@ class AuthService {
     const existedUser = await authRepository.findByUsername(data.username);
 
     if (existedUser) {
-      throw new ConflictError("Username already exists");
+      throw new ConflictError("Tên đăng nhập đã tồn tại");
     }
 
     const hashedPassword = await bcrypt.hash(data.password, 10);
@@ -41,13 +41,13 @@ class AuthService {
     const user = await authRepository.findByUsername(data.username);
 
     if (!user) {
-      throw new UnauthorizedError("Invalid username or password");
+      throw new UnauthorizedError("Tên đăng nhập hoặc mật khẩu không đúng");
     }
 
     const isMatch = await bcrypt.compare(data.password, user.password);
 
     if (!isMatch) {
-      throw new UnauthorizedError("Invalid username or password");
+      throw new UnauthorizedError("Tên đăng nhập hoặc mật khẩu không đúng");
     }
 
     const token = signToken({
@@ -69,7 +69,7 @@ class AuthService {
     const user = await authRepository.findById(userId);
 
     if (!user) {
-      throw new NotFoundError("User not found");
+      throw new NotFoundError("Không tìm thấy người dùng");
     }
 
     return {

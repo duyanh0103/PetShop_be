@@ -1,22 +1,31 @@
 const { z } = require("zod");
 
 const createProductSchema = z.object({
-  name: z.string().trim().min(1, "Name is required").max(255),
-  sku: z.string().trim().min(1, "SKU is required").max(100),
-  price: z.coerce.number().nonnegative("Price must be >= 0"),
-  quantity: z.coerce.number().int().nonnegative("Quantity must be >= 0").optional().default(0),
+  name: z.string().trim().min(1, "Vui lòng nhập tên sản phẩm").max(255),
+  sku: z.string().trim().min(1, "Vui lòng nhập SKU").max(100),
+  price: z.coerce.number().nonnegative("Giá phải lớn hơn hoặc bằng 0"),
+  quantity: z.coerce.number().int().nonnegative("Số lượng phải lớn hơn hoặc bằng 0").optional().default(0),
   imageUrl: z.string().trim().max(1000).optional().nullable(),
   description: z.string().trim().max(2000).optional().nullable(),
-  categoryId: z.string().uuid("categoryId must be a valid UUID"),
+  isActive: z.boolean().optional().default(true),
+  categoryId: z.string().uuid("Danh mục không hợp lệ"),
 });
 
 const updateProductSchema = createProductSchema.partial();
+
+const updateStatusSchema = z.object({
+  isActive: z.boolean({ error: "Vui lòng chọn trạng thái hợp lệ" }),
+});
 
 const listProductSchema = z.object({
   page: z.coerce.number().int().min(1).optional().default(1),
   limit: z.coerce.number().int().min(1).max(100).optional().default(10),
   search: z.string().trim().optional(),
   categoryId: z.string().uuid().optional(),
+  isActive: z
+    .enum(["true", "false"])
+    .optional()
+    .transform((v) => (v === undefined ? undefined : v === "true")),
   sortBy: z
     .enum(["name", "price", "quantity", "createdAt", "updatedAt"])
     .optional()
@@ -30,7 +39,7 @@ function validate(schema, source) {
 
     if (!result.success) {
       return res.status(400).json({
-        message: "Validation failed",
+        message: "Dữ liệu không hợp lệ",
         errors: result.error.flatten().fieldErrors,
       });
     }
@@ -52,5 +61,6 @@ function validate(schema, source) {
 module.exports = {
   validateCreateProduct: validate(createProductSchema, "body"),
   validateUpdateProduct: validate(updateProductSchema, "body"),
+  validateUpdateStatus: validate(updateStatusSchema, "body"),
   validateListProduct: validate(listProductSchema, "query"),
 };

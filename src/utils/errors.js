@@ -15,31 +15,31 @@ class AppError extends Error {
 }
 
 class BadRequestError extends AppError {
-  constructor(message = "Bad request", errors) {
+  constructor(message = "Yêu cầu không hợp lệ", errors) {
     super(message, 400, errors);
   }
 }
 
 class UnauthorizedError extends AppError {
-  constructor(message = "Unauthorized") {
+  constructor(message = "Chưa xác thực") {
     super(message, 401);
   }
 }
 
 class ForbiddenError extends AppError {
-  constructor(message = "Forbidden") {
+  constructor(message = "Không có quyền truy cập") {
     super(message, 403);
   }
 }
 
 class NotFoundError extends AppError {
-  constructor(message = "Not found") {
+  constructor(message = "Không tìm thấy") {
     super(message, 404);
   }
 }
 
 class ConflictError extends AppError {
-  constructor(message = "Conflict") {
+  constructor(message = "Dữ liệu bị xung đột") {
     super(message, 409);
   }
 }

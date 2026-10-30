@@ -45,8 +45,11 @@ model Product {
   quantity    Int
   imageUrl    String?
   description String?
+  isActive    Boolean  @default(true)
   categoryId  String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   category    Category @relation(fields: [categoryId], references: [id])
+
+  @@index([isActive])
 }

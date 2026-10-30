@@ -84,7 +84,7 @@ test("remove throws ConflictError when the category still has products", async (
 
   await assert.rejects(
     () => categoryService.remove("cat-1"),
-    (err) => err instanceof ConflictError && err.message.includes("2 product")
+    (err) => err instanceof ConflictError && err.message.includes("2 sản phẩm")
   );
 });
 

@@ -6,18 +6,18 @@ const registerSchema = z.object({
   username: z
     .string()
     .trim()
-    .min(3, "Username must be at least 3 characters")
-    .max(50, "Username must be at most 50 characters")
-    .regex(usernameRegex, "Username can only contain letters, numbers and underscores"),
+    .min(3, "Tên đăng nhập phải có ít nhất 3 ký tự")
+    .max(50, "Tên đăng nhập không được vượt quá 50 ký tự")
+    .regex(usernameRegex, "Tên đăng nhập chỉ được chứa chữ cái, số và dấu gạch dưới"),
   password: z
     .string()
-    .min(6, "Password must be at least 6 characters")
-    .max(100, "Password must be at most 100 characters"),
+    .min(6, "Mật khẩu phải có ít nhất 6 ký tự")
+    .max(100, "Mật khẩu không được vượt quá 100 ký tự"),
 });
 
 const loginSchema = z.object({
-  username: z.string().trim().min(1, "Username is required"),
-  password: z.string().min(1, "Password is required"),
+  username: z.string().trim().min(1, "Vui lòng nhập tên đăng nhập"),
+  password: z.string().min(1, "Vui lòng nhập mật khẩu"),
 });
 
 function validate(schema, source) {
@@ -26,7 +26,7 @@ function validate(schema, source) {
 
     if (!result.success) {
       return res.status(400).json({
-        message: "Validation failed",
+        message: "Dữ liệu không hợp lệ",
         errors: result.error.flatten().fieldErrors,
       });
     }

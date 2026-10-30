@@ -6,7 +6,7 @@ function authMiddleware(req, res, next) {
 
     if (!authHeader) {
       return res.status(401).json({
-        message: "No token provided",
+        message: "Không tìm thấy token xác thực",
       });
     }
 
@@ -15,7 +15,7 @@ function authMiddleware(req, res, next) {
 
     if (!token) {
       return res.status(401).json({
-        message: "Invalid token format",
+        message: "Định dạng token không hợp lệ",
       });
     }
 
@@ -26,7 +26,7 @@ function authMiddleware(req, res, next) {
     next();
   } catch (error) {
     return res.status(401).json({
-      message: "Unauthorized - invalid token",
+      message: "Token không hợp lệ hoặc đã hết hạn",
     });
   }
 }

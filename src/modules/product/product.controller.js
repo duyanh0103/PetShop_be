@@ -6,7 +6,7 @@ class ProductController {
       const result = await productService.list(req.validatedQuery);
 
       return res.status(200).json({
-        message: "Get products successfully",
+        message: "Lấy danh sách sản phẩm thành công",
         data: result.items,
         pagination: result.pagination,
       });
@@ -20,7 +20,7 @@ class ProductController {
       const product = await productService.getById(req.params.id);
 
       return res.status(200).json({
-        message: "Get product successfully",
+        message: "Lấy thông tin sản phẩm thành công",
         data: product,
       });
     } catch (error) {
@@ -33,7 +33,7 @@ class ProductController {
       const product = await productService.create(req.body);
 
       return res.status(201).json({
-        message: "Create product successfully",
+        message: "Tạo sản phẩm thành công",
         data: product,
       });
     } catch (error) {
@@ -46,7 +46,23 @@ class ProductController {
       const product = await productService.update(req.params.id, req.body);
 
       return res.status(200).json({
-        message: "Update product successfully",
+        message: "Cập nhật sản phẩm thành công",
+        data: product,
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async updateStatus(req, res, next) {
+    try {
+      const product = await productService.setActiveStatus(
+        req.params.id,
+        req.body.isActive
+      );
+
+      return res.status(200).json({
+        message: "Cập nhật trạng thái sản phẩm thành công",
         data: product,
       });
     } catch (error) {
@@ -59,7 +75,7 @@ class ProductController {
       await productService.remove(req.params.id);
 
       return res.status(200).json({
-        message: "Delete product successfully",
+        message: "Xóa sản phẩm thành công",
       });
     } catch (error) {
       return next(error);

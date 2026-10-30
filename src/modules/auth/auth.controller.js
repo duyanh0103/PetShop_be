@@ -6,7 +6,7 @@ class AuthController {
       const result = await authService.register(req.body);
 
       return res.status(201).json({
-        message: "Register successfully",
+        message: "Đăng ký thành công",
         data: result,
       });
     } catch (error) {
@@ -19,7 +19,7 @@ class AuthController {
       const result = await authService.login(req.body);
 
       return res.status(200).json({
-        message: "Login successfully",
+        message: "Đăng nhập thành công",
         data: result,
       });
     } catch (error) {
@@ -32,7 +32,7 @@ class AuthController {
       const user = await authService.getCurrentUser(req.user.id);
 
       return res.status(200).json({
-        message: "Get current user successfully",
+        message: "Lấy thông tin người dùng thành công",
         data: user,
       });
     } catch (error) {

@@ -26,7 +26,7 @@ router.get(
   authorize("ADMIN", "SUPER_ADMIN"),
   (req, res) => {
     res.json({
-      message: "Welcome Admin",
+      message: "Chào mừng Admin",
       user: req.user,
     });
   }

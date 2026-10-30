@@ -3,13 +3,13 @@ const { z } = require("zod");
 const slugRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 const createCategorySchema = z.object({
-  name: z.string().trim().min(1, "Name is required").max(255),
+  name: z.string().trim().min(1, "Vui lòng nhập tên danh mục").max(255),
   slug: z
     .string()
     .trim()
     .min(1)
     .max(255)
-    .regex(slugRegex, "Slug must be lowercase alphanumeric words separated by hyphens")
+    .regex(slugRegex, "Slug chỉ được chứa chữ thường, số, cách nhau bởi dấu gạch ngang")
     .optional(),
   description: z.string().trim().max(2000).optional().nullable(),
   imageUrl: z.string().trim().max(1000).optional().nullable(),
@@ -20,7 +20,7 @@ const createCategorySchema = z.object({
 const updateCategorySchema = createCategorySchema.partial();
 
 const updateStatusSchema = z.object({
-  isActive: z.boolean({ error: "isActive is required and must be a boolean" }),
+  isActive: z.boolean({ error: "Vui lòng chọn trạng thái hợp lệ" }),
 });
 
 const listCategorySchema = z.object({
@@ -41,7 +41,7 @@ function validate(schema, source) {
 
     if (!result.success) {
       return res.status(400).json({
-        message: "Validation failed",
+        message: "Dữ liệu không hợp lệ",
         errors: result.error.flatten().fieldErrors,
       });
     }

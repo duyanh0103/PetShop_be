@@ -6,23 +6,24 @@ class ProductService {
   async assertCategoryExists(categoryId) {
     const category = await categoryRepository.findById(categoryId);
     if (!category) {
-      throw new BadRequestError("Category does not exist");
+      throw new BadRequestError("Danh mục không tồn tại");
     }
   }
 
-  async list({ page, limit, search, categoryId, sortBy, sortDir }) {
+  async list({ page, limit, search, categoryId, isActive, sortBy, sortDir }) {
     const skip = (page - 1) * limit;
 
     const [items, total] = await Promise.all([
       productRepository.findMany({
         search,
         categoryId,
+        isActive,
         skip,
         take: limit,
         sortBy,
         sortDir,
       }),
-      productRepository.count({ search, categoryId }),
+      productRepository.count({ search, categoryId, isActive }),
     ]);
 
     return {
@@ -40,7 +41,7 @@ class ProductService {
     const product = await productRepository.findById(id);
 
     if (!product) {
-      throw new NotFoundError("Product not found");
+      throw new NotFoundError("Không tìm thấy sản phẩm");
     }
 
     return this.toResponse(product);
@@ -61,6 +62,7 @@ class ProductService {
       quantity: data.quantity ?? 0,
       imageUrl: data.imageUrl ?? null,
       description: data.description ?? null,
+      isActive: data.isActive ?? true,
       categoryId: data.categoryId,
     });
 
@@ -71,7 +73,7 @@ class ProductService {
     const existing = await productRepository.findById(id);
 
     if (!existing) {
-      throw new NotFoundError("Product not found");
+      throw new NotFoundError("Không tìm thấy sản phẩm");
     }
 
     if (data.categoryId && data.categoryId !== existing.categoryId) {
@@ -81,7 +83,7 @@ class ProductService {
     if (data.sku && data.sku !== existing.sku) {
       const skuOwner = await productRepository.findBySku(data.sku);
       if (skuOwner && skuOwner.id !== id) {
-        throw new ConflictError("SKU already exists");
+        throw new ConflictError("SKU đã tồn tại");
       }
     }
 
@@ -93,11 +95,22 @@ class ProductService {
     const existing = await productRepository.findById(id);
 
     if (!existing) {
-      throw new NotFoundError("Product not found");
+      throw new NotFoundError("Không tìm thấy sản phẩm");
     }
 
     await productRepository.delete(id);
     return { id };
+  }
+
+  async setActiveStatus(id, isActive) {
+    const existing = await productRepository.findById(id);
+
+    if (!existing) {
+      throw new NotFoundError("Không tìm thấy sản phẩm");
+    }
+
+    const product = await productRepository.update(id, { isActive });
+    return this.toResponse(product);
   }
 
   toResponse(product) {
@@ -109,6 +122,7 @@ class ProductService {
       quantity: product.quantity,
       imageUrl: product.imageUrl,
       description: product.description,
+      isActive: product.isActive,
       categoryId: product.categoryId,
       category: product.category
         ? {

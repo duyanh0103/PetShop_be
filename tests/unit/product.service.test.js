@@ -103,3 +103,29 @@ test("remove deletes the product when it exists", async (t) => {
   assert.equal(result.id, "prod-1");
   assert.equal(deleteMock.mock.calls.length, 1);
 });
+
+test("setActiveStatus throws NotFoundError when the product does not exist", async (t) => {
+  t.mock.method(productRepository, "findById", async () => null);
+
+  await assert.rejects(() => productService.setActiveStatus("missing-id", false), NotFoundError);
+});
+
+test("setActiveStatus updates only isActive and returns the mapped product", async (t) => {
+  t.mock.method(productRepository, "findById", async () => ({ id: "prod-1", isActive: true }));
+  const updateMock = t.mock.method(productRepository, "update", async (id, data) => ({
+    id,
+    name: "Dog Toy",
+    sku: "TOY-001",
+    price: { toString: () => "19.99" },
+    quantity: 5,
+    isActive: data.isActive,
+    category: { id: "cat-1", name: "Toys", slug: "toys" },
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  }));
+
+  const result = await productService.setActiveStatus("prod-1", false);
+
+  assert.equal(result.isActive, false);
+  assert.deepEqual(updateMock.mock.calls[0].arguments, ["prod-1", { isActive: false }]);
+});

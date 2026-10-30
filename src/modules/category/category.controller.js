@@ -6,7 +6,7 @@ class CategoryController {
       const result = await categoryService.list(req.validatedQuery);
 
       return res.status(200).json({
-        message: "Get categories successfully",
+        message: "Lấy danh sách danh mục thành công",
         data: result.items,
         pagination: result.pagination,
       });
@@ -20,7 +20,7 @@ class CategoryController {
       const category = await categoryService.getById(req.params.id);
 
       return res.status(200).json({
-        message: "Get category successfully",
+        message: "Lấy thông tin danh mục thành công",
         data: category,
       });
     } catch (error) {
@@ -33,7 +33,7 @@ class CategoryController {
       const category = await categoryService.create(req.body);
 
       return res.status(201).json({
-        message: "Create category successfully",
+        message: "Tạo danh mục thành công",
         data: category,
       });
     } catch (error) {
@@ -46,7 +46,7 @@ class CategoryController {
       const category = await categoryService.update(req.params.id, req.body);
 
       return res.status(200).json({
-        message: "Update category successfully",
+        message: "Cập nhật danh mục thành công",
         data: category,
       });
     } catch (error) {
@@ -62,7 +62,7 @@ class CategoryController {
       );
 
       return res.status(200).json({
-        message: "Update category status successfully",
+        message: "Cập nhật trạng thái danh mục thành công",
         data: category,
       });
     } catch (error) {
@@ -75,7 +75,7 @@ class CategoryController {
       await categoryService.remove(req.params.id);
 
       return res.status(200).json({
-        message: "Delete category successfully",
+        message: "Xóa danh mục thành công",
       });
     } catch (error) {
       return next(error);

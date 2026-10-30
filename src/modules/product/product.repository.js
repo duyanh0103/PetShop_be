@@ -1,7 +1,7 @@
 const prisma = require("../../configs/prisma");
 
 class ProductRepository {
-  buildWhere({ search, categoryId }) {
+  buildWhere({ search, categoryId, isActive }) {
     const where = {};
 
     if (search) {
@@ -15,11 +15,15 @@ class ProductRepository {
       where.categoryId = categoryId;
     }
 
+    if (typeof isActive === "boolean") {
+      where.isActive = isActive;
+    }
+
     return where;
   }
 
-  async findMany({ search, categoryId, skip, take, sortBy, sortDir }) {
-    const where = this.buildWhere({ search, categoryId });
+  async findMany({ search, categoryId, isActive, skip, take, sortBy, sortDir }) {
+    const where = this.buildWhere({ search, categoryId, isActive });
 
     return prisma.product.findMany({
       where,
@@ -32,8 +36,8 @@ class ProductRepository {
     });
   }
 
-  async count({ search, categoryId }) {
-    const where = this.buildWhere({ search, categoryId });
+  async count({ search, categoryId, isActive }) {
+    const where = this.buildWhere({ search, categoryId, isActive });
     return prisma.product.count({ where });
   }
 

@@ -55,7 +55,7 @@ class CategoryService {
     const category = await categoryRepository.findById(id);
 
     if (!category) {
-      throw new NotFoundError("Category not found");
+      throw new NotFoundError("Không tìm thấy danh mục");
     }
 
     return this.toResponse(category);
@@ -67,7 +67,7 @@ class CategoryService {
     if (data.slug) {
       const existing = await categoryRepository.findBySlug(data.slug);
       if (existing) {
-        throw new ConflictError("Slug already exists");
+        throw new ConflictError("Slug đã tồn tại");
       }
       slug = data.slug;
     } else {
@@ -90,7 +90,7 @@ class CategoryService {
     const existing = await categoryRepository.findById(id);
 
     if (!existing) {
-      throw new NotFoundError("Category not found");
+      throw new NotFoundError("Không tìm thấy danh mục");
     }
 
     const payload = { ...data };
@@ -98,7 +98,7 @@ class CategoryService {
     if (data.slug && data.slug !== existing.slug) {
       const slugOwner = await categoryRepository.findBySlug(data.slug);
       if (slugOwner && slugOwner.id !== id) {
-        throw new ConflictError("Slug already exists");
+        throw new ConflictError("Slug đã tồn tại");
       }
     }
     // Note: slug is only changed when the caller explicitly sends a new one.
@@ -113,14 +113,14 @@ class CategoryService {
     const existing = await categoryRepository.findById(id);
 
     if (!existing) {
-      throw new NotFoundError("Category not found");
+      throw new NotFoundError("Không tìm thấy danh mục");
     }
 
     const productCount = await categoryRepository.countProducts(id);
 
     if (productCount > 0) {
       throw new ConflictError(
-        `Cannot delete category: ${productCount} product(s) still belong to it`
+        `Không thể xóa danh mục: còn ${productCount} sản phẩm thuộc danh mục này`
       );
     }
 
@@ -132,7 +132,7 @@ class CategoryService {
     const existing = await categoryRepository.findById(id);
 
     if (!existing) {
-      throw new NotFoundError("Category not found");
+      throw new NotFoundError("Không tìm thấy danh mục");
     }
 
     const category = await categoryRepository.update(id, { isActive });

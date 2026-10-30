@@ -7,6 +7,7 @@ const productController = require("./product.controller");
 const {
   validateCreateProduct,
   validateUpdateProduct,
+  validateUpdateStatus,
   validateListProduct,
 } = require("./product.validation");
 
@@ -38,6 +39,14 @@ router.put(
   canManageProduct,
   validateUpdateProduct,
   (req, res, next) => productController.update(req, res, next)
+);
+
+router.patch(
+  "/:id/status",
+  authMiddleware,
+  canManageProduct,
+  validateUpdateStatus,
+  (req, res, next) => productController.updateStatus(req, res, next)
 );
 
 router.delete("/:id", authMiddleware, canManageProduct, (req, res, next) =>
