@@ -52,7 +52,7 @@ class ProductService {
 
     const existingSku = await productRepository.findBySku(data.sku);
     if (existingSku) {
-      throw new ConflictError("SKU already exists");
+      throw new ConflictError("SKU đã tồn tại");
     }
 
     const product = await productRepository.create({

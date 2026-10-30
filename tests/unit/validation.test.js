@@ -2,7 +2,10 @@ const { test } = require("node:test");
 const assert = require("node:assert/strict");
 
 const { validateCreateCategory } = require("../../src/modules/category/category.validation");
-const { validateCreateProduct } = require("../../src/modules/product/product.validation");
+const {
+  validateCreateProduct,
+  validateUpdateProduct,
+} = require("../../src/modules/product/product.validation");
 const { validateRegister, validateLogin } = require("../../src/modules/auth/auth.validation");
 
 function mockRes() {
@@ -141,4 +144,34 @@ test("validateLogin accepts a valid payload", () => {
   });
 
   assert.equal(nextCalled, true);
+});
+
+test("validateUpdateProduct does not inject defaults for omitted fields", () => {
+  const req = { body: { name: "Dog Toy v2" } };
+  const res = mockRes();
+  let nextCalled = false;
+
+  validateUpdateProduct(req, res, () => {
+    nextCalled = true;
+  });
+
+  assert.equal(nextCalled, true);
+  assert.deepEqual(req.body, { name: "Dog Toy v2" });
+});
+
+test("validateCreateProduct defaults quantity to 0 and isActive to true", () => {
+  const req = {
+    body: {
+      name: "Dog Toy",
+      sku: "TOY-001",
+      price: 10,
+      categoryId: "11111111-1111-4111-8111-111111111111",
+    },
+  };
+  const res = mockRes();
+
+  validateCreateProduct(req, res, () => {});
+
+  assert.equal(req.body.quantity, 0);
+  assert.equal(req.body.isActive, true);
 });

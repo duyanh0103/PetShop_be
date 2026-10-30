@@ -47,11 +47,18 @@ async function seedSuperAdmin() {
     return;
   }
 
-  const hashedPassword = await bcrypt.hash("SuperAdmin@123", 10);
+  const username = process.env.SEED_SUPER_ADMIN_USERNAME || "superadmin@petshop.com";
+  const password = process.env.SEED_SUPER_ADMIN_PASSWORD || "SuperAdmin@123";
+
+  if (!process.env.SEED_SUPER_ADMIN_PASSWORD) {
+    console.warn("SEED_SUPER_ADMIN_PASSWORD is not set, using the default dev password.");
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 10);
 
   const superAdmin = await prisma.user.create({
     data: {
-      username: "superadmin@petshop.com",
+      username,
       password: hashedPassword,
       role: "SUPER_ADMIN",
     },

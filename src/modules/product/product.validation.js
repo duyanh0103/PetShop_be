@@ -1,17 +1,26 @@
 const { z } = require("zod");
 
-const createProductSchema = z.object({
+const productFields = {
   name: z.string().trim().min(1, "Vui lòng nhập tên sản phẩm").max(255),
   sku: z.string().trim().min(1, "Vui lòng nhập SKU").max(100),
   price: z.coerce.number().nonnegative("Giá phải lớn hơn hoặc bằng 0"),
-  quantity: z.coerce.number().int().nonnegative("Số lượng phải lớn hơn hoặc bằng 0").optional().default(0),
+  quantity: z.coerce.number().int().nonnegative("Số lượng phải lớn hơn hoặc bằng 0"),
   imageUrl: z.string().trim().max(1000).optional().nullable(),
   description: z.string().trim().max(2000).optional().nullable(),
-  isActive: z.boolean().optional().default(true),
+  isActive: z.boolean(),
   categoryId: z.string().uuid("Danh mục không hợp lệ"),
+};
+
+const createProductSchema = z.object({
+  ...productFields,
+  quantity: productFields.quantity.optional().default(0),
+  isActive: productFields.isActive.optional().default(true),
 });
 
-const updateProductSchema = createProductSchema.partial();
+// Built from the raw fields instead of createProductSchema.partial(): Zod 4 still
+// applies .default() inside .partial(), which would reset quantity/isActive on
+// every partial update.
+const updateProductSchema = z.object(productFields).partial();
 
 const updateStatusSchema = z.object({
   isActive: z.boolean({ error: "Vui lòng chọn trạng thái hợp lệ" }),
