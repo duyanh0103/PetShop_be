@@ -51,6 +51,9 @@ async function seedSuperAdmin() {
   const password = process.env.SEED_SUPER_ADMIN_PASSWORD || "SuperAdmin@123";
 
   if (!process.env.SEED_SUPER_ADMIN_PASSWORD) {
+    if (process.argv.includes("--admin-only")) {
+      throw new Error("SEED_SUPER_ADMIN_PASSWORD is required with --admin-only (production seed).");
+    }
     console.warn("SEED_SUPER_ADMIN_PASSWORD is not set, using the default dev password.");
   }
 
@@ -111,7 +114,13 @@ async function main() {
   console.log("Starting seed...");
 
   await seedSuperAdmin();
-  await seedCatalog();
+
+  // Production only needs the SUPER_ADMIN account, never the sample catalog.
+  if (process.argv.includes("--admin-only")) {
+    console.log("--admin-only: skipping sample catalog.");
+  } else {
+    await seedCatalog();
+  }
 
   console.log("Seed finished.");
 }

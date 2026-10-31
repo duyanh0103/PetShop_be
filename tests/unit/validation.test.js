@@ -7,6 +7,7 @@ const {
   validateUpdateProduct,
 } = require("../../src/modules/product/product.validation");
 const { validateRegister, validateLogin } = require("../../src/modules/auth/auth.validation");
+const { validateListPublicProduct } = require("../../src/modules/public/public.validation");
 
 function mockRes() {
   const res = { statusCode: null, body: null };
@@ -135,7 +136,7 @@ test("validateRegister rejects usernames with invalid characters", () => {
 });
 
 test("validateLogin accepts a valid payload", () => {
-  const req = { body: { username: "duyanh", password: "secret123" } };
+  const req = { body: { identifier: "duyanh", password: "secret123" } };
   const res = mockRes();
   let nextCalled = false;
 
@@ -174,4 +175,69 @@ test("validateCreateProduct defaults quantity to 0 and isActive to true", () => 
 
   assert.equal(req.body.quantity, 0);
   assert.equal(req.body.isActive, true);
+});
+
+const VALID_REGISTER = {
+  fullName: "Duy Anh",
+  email: "DuyAnh@Example.com",
+  username: "duyanh",
+  password: "secret123",
+};
+
+test("validateRegister normalizes email to lowercase and treats empty phone as omitted", () => {
+  const req = { body: { ...VALID_REGISTER, phone: "" } };
+  const res = mockRes();
+  let nextCalled = false;
+
+  validateRegister(req, res, () => {
+    nextCalled = true;
+  });
+
+  assert.equal(nextCalled, true);
+  assert.equal(req.body.email, "duyanh@example.com");
+  assert.equal(req.body.phone, undefined);
+});
+
+test("validateRegister rejects an invalid email and phone", () => {
+  const req = { body: { ...VALID_REGISTER, email: "not-an-email", phone: "12345" } };
+  const res = mockRes();
+
+  validateRegister(req, res, () => {});
+
+  assert.equal(res.statusCode, 400);
+  assert.ok(res.body.errors.email);
+  assert.ok(res.body.errors.phone);
+});
+
+test("validateRegister requires fullName and email", () => {
+  const req = { body: { username: "duyanh", password: "secret123" } };
+  const res = mockRes();
+
+  validateRegister(req, res, () => {});
+
+  assert.equal(res.statusCode, 400);
+  assert.ok(res.body.errors.fullName);
+  assert.ok(res.body.errors.email);
+});
+
+test("validateLogin rejects a missing identifier with a Vietnamese message", () => {
+  const req = { body: { password: "secret123" } };
+  const res = mockRes();
+
+  validateLogin(req, res, () => {});
+
+  assert.equal(res.statusCode, 400);
+  assert.equal(res.body.errors.identifier[0], "Vui lòng nhập email hoặc tên đăng nhập");
+});
+
+test("validateListPublicProduct applies defaults and rejects an unknown sort", () => {
+  const ok = { query: {} };
+  validateListPublicProduct(ok, mockRes(), () => {});
+  assert.deepEqual(ok.validatedQuery, { page: 1, limit: 12, sort: "newest" });
+
+  const bad = { query: { sort: "random" } };
+  const res = mockRes();
+  validateListPublicProduct(bad, res, () => {});
+  assert.equal(res.statusCode, 400);
+  assert.ok(res.body.errors.sort);
 });

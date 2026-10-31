@@ -4,7 +4,9 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url       = env("DATABASE_URL")
+  // Migrations go through Neon's direct (non-pooled) endpoint.
+  directUrl = env("DIRECT_URL")
 }
 
 enum Role {
@@ -17,8 +19,12 @@ enum Role {
 model User {
   id        String   @id @default(uuid())
   username  String   @unique
+  email     String?  @unique
+  fullName  String?
+  phone     String?
   password  String
   role      Role     @default(CUSTOMER)
+  isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

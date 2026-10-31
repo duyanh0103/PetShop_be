@@ -1,0 +1,24 @@
+# Render Blueprint: Dashboard → New → Blueprint → chọn repo PetShop_be.
+# Các biến `sync: false` sẽ được hỏi khi tạo Blueprint (nhập tay, không lưu trong repo).
+services:
+  - type: web
+    name: petshop-be
+    runtime: node
+    plan: free
+    region: singapore
+    branch: main
+    buildCommand: npm ci && npx prisma generate
+    # Free plan không có preDeployCommand, nên chạy migration ngay trước khi start.
+    startCommand: npx prisma migrate deploy && npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATABASE_URL # Neon PRODUCTION, pooled (host có "-pooler")
+        sync: false
+      - key: DIRECT_URL # Neon PRODUCTION, direct (host không có "-pooler")
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGIN # vd: https://pet-shop-fe-coral.vercel.app
+        sync: false
