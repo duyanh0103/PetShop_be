@@ -9,7 +9,8 @@
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "seed": "node prisma/seed.js",
-    "seed:admin": "node prisma/seed.js --admin-only"
+    "seed:admin": "node prisma/seed.js --admin-only",
+    "admin:update": "node prisma/update-admin.js"
   },
   "keywords": [],
   "author": "",
