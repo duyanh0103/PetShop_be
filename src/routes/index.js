@@ -4,6 +4,7 @@ const authRoute = require("../modules/auth/auth.route");
 const categoryRoute = require("../modules/category/category.route");
 const productRoute = require("../modules/product/product.route");
 const publicRoute = require("../modules/public/public.route");
+const orderRoute = require("../modules/order/order.route");
 
 const router = express.Router();
 
@@ -14,5 +15,6 @@ router.use("/public", publicRoute);
 router.use("/auth", authRoute);
 router.use("/categories", categoryRoute);
 router.use("/products", productRoute);
+router.use("/orders", orderRoute);
 
 module.exports = router;
