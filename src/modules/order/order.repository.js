@@ -1,11 +1,14 @@
 const prisma = require("../../configs/prisma");
+const {
+  toVietnamDate,
+  startOfVietnamDay,
+  startOfNextVietnamDay,
+} = require("../../utils/vietnamTime");
 
-const VIETNAM_DATE = new Intl.DateTimeFormat("en-CA", {
-  timeZone: "Asia/Ho_Chi_Minh",
-  year: "numeric",
-  month: "2-digit",
-  day: "2-digit",
-});
+const adminInclude = {
+  items: true,
+  user: { select: { id: true, username: true, fullName: true, email: true, phone: true } },
+};
 
 class OrderRepository {
   transaction(work) {
@@ -45,7 +48,7 @@ class OrderRepository {
   // inside it, this one row would make every order wait for the previous commit.
   // The cost is a skipped number when an order then fails.
   async nextOrderCode(db = prisma, now = new Date()) {
-    const date = VIETNAM_DATE.format(now).replaceAll("-", "");
+    const date = toVietnamDate(now).replaceAll("-", "");
 
     const counter = await db.orderCounter.upsert({
       where: { date },
@@ -84,14 +87,58 @@ class OrderRepository {
     });
   }
 
-  // Guarded on PENDING so a concurrent cancel cannot restock the same order twice.
-  async markCancelled(id, db = prisma) {
+  // Guarded on the status the caller saw: of two concurrent changes only one
+  // applies, so a cancel can never restock the same order twice.
+  async transitionStatus(id, from, to, db = prisma) {
     const { count } = await db.order.updateMany({
-      where: { id, status: "PENDING" },
-      data: { status: "CANCELLED" },
+      where: { id, status: from },
+      data: { status: to },
     });
 
     return count === 1;
+  }
+
+  buildAdminWhere({ status, from, to, search }) {
+    const where = {};
+
+    if (status) {
+      where.status = status;
+    }
+
+    if (from || to) {
+      where.createdAt = {
+        ...(from ? { gte: startOfVietnamDay(from) } : {}),
+        ...(to ? { lt: startOfNextVietnamDay(to) } : {}),
+      };
+    }
+
+    if (search) {
+      where.OR = [
+        { code: { contains: search, mode: "insensitive" } },
+        { shippingPhone: { contains: search } },
+        { shippingName: { contains: search, mode: "insensitive" } },
+      ];
+    }
+
+    return where;
+  }
+
+  async findManyAdmin({ skip, take, ...filters }) {
+    return prisma.order.findMany({
+      where: this.buildAdminWhere(filters),
+      skip,
+      take,
+      orderBy: { createdAt: "desc" },
+      include: adminInclude,
+    });
+  }
+
+  async countAdmin(filters) {
+    return prisma.order.count({ where: this.buildAdminWhere(filters) });
+  }
+
+  async findByIdAdmin(id) {
+    return prisma.order.findUnique({ where: { id }, include: adminInclude });
   }
 }
 

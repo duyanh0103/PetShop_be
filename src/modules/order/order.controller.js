@@ -66,6 +66,46 @@ class OrderController {
       return next(error);
     }
   }
+
+  async listAdmin(req, res, next) {
+    try {
+      const result = await orderService.listAdmin(req.validatedQuery);
+
+      return res.status(200).json({
+        message: "Lấy danh sách đơn hàng thành công",
+        data: result.items,
+        pagination: result.pagination,
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async getAdmin(req, res, next) {
+    try {
+      const order = await orderService.getAdmin(req.params.id);
+
+      return res.status(200).json({
+        message: "Lấy thông tin đơn hàng thành công",
+        data: order,
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async updateStatusAdmin(req, res, next) {
+    try {
+      const order = await orderService.updateStatusAdmin(req.params.id, req.body.status);
+
+      return res.status(200).json({
+        message: "Cập nhật trạng thái đơn hàng thành công",
+        data: order,
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
 }
 
 module.exports = new OrderController();

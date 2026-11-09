@@ -310,7 +310,7 @@ test("cancelMine restocks every item that still has a product", async (t) => {
       { productId: null, quantity: 5, unitPrice: 1, lineTotal: 5 },
     ],
   }));
-  t.mock.method(orderRepository, "markCancelled", async () => true);
+  t.mock.method(orderRepository, "transitionStatus", async () => true);
   const restock = t.mock.method(orderRepository, "incrementStock", async () => ({ count: 1 }));
 
   const order = await orderService.cancelMine("user-1", "order-1");
@@ -327,7 +327,7 @@ test("cancelMine rejects an order past PENDING and does not restock", async (t) 
     status: "SHIPPING",
     items: [{ productId: "prod-1", quantity: 2 }],
   }));
-  t.mock.method(orderRepository, "markCancelled", async () => false);
+  t.mock.method(orderRepository, "transitionStatus", async () => false);
   const restock = t.mock.method(orderRepository, "incrementStock", async () => ({ count: 1 }));
 
   await assert.rejects(() => orderService.cancelMine("user-1", "order-1"), ConflictError);
@@ -370,4 +370,104 @@ test("validation rejects a bad phone number with a Vietnamese message", () => {
 
   assert.equal(statusCode, 400);
   assert.equal(payload.errors.shippingPhone[0], "Số điện thoại phải gồm 10 chữ số và bắt đầu bằng 0");
+});
+
+const adminOrder = (overrides = {}) => ({
+  id: "order-1",
+  status: "PENDING",
+  items: [{ id: "i1", productId: "prod-1", quantity: 2, unitPrice: 1, lineTotal: 2 }],
+  user: { id: "user-1", username: "khach", fullName: "Khách", email: null, phone: null },
+  ...overrides,
+});
+
+function mockAdminUpdate(t, order, { changed = true } = {}) {
+  t.mock.method(orderRepository, "transaction", (work) => work("tx"));
+  t.mock.method(orderRepository, "findByIdAdmin", async () => order);
+
+  return {
+    transition: t.mock.method(orderRepository, "transitionStatus", async () => changed),
+    restock: t.mock.method(orderRepository, "incrementStock", async () => ({ count: 1 })),
+  };
+}
+
+for (const [from, to] of [
+  ["PENDING", "CONFIRMED"],
+  ["CONFIRMED", "SHIPPING"],
+  ["SHIPPING", "COMPLETED"],
+]) {
+  test(`updateStatusAdmin moves ${from} to ${to} without touching stock`, async (t) => {
+    const { transition, restock } = mockAdminUpdate(t, adminOrder({ status: from }));
+
+    const order = await orderService.updateStatusAdmin("order-1", to);
+
+    assert.equal(order.status, to);
+    assert.deepEqual(transition.mock.calls[0].arguments, ["order-1", from, to, "tx"]);
+    assert.equal(restock.mock.callCount(), 0);
+  });
+}
+
+for (const [from, to] of [
+  ["PENDING", "SHIPPING"],
+  ["PENDING", "COMPLETED"],
+  ["PENDING", "PENDING"],
+  ["CONFIRMED", "COMPLETED"],
+  ["SHIPPING", "CANCELLED"],
+  ["COMPLETED", "CANCELLED"],
+  ["CANCELLED", "PENDING"],
+]) {
+  test(`updateStatusAdmin rejects ${from} to ${to}`, async (t) => {
+    const { transition } = mockAdminUpdate(t, adminOrder({ status: from }));
+
+    await assert.rejects(() => orderService.updateStatusAdmin("order-1", to), ConflictError);
+    assert.equal(transition.mock.callCount(), 0);
+  });
+}
+
+test("updateStatusAdmin restocks when an admin cancels a confirmed order", async (t) => {
+  const { restock } = mockAdminUpdate(t, adminOrder({ status: "CONFIRMED" }));
+
+  const order = await orderService.updateStatusAdmin("order-1", "CANCELLED");
+
+  assert.equal(order.status, "CANCELLED");
+  assert.deepEqual(order.allowedStatuses, []);
+  assert.deepEqual(restock.mock.calls[0].arguments, ["prod-1", 2, "tx"]);
+});
+
+test("updateStatusAdmin loses a concurrent change with a 409 and no restock", async (t) => {
+  const { restock } = mockAdminUpdate(t, adminOrder(), { changed: false });
+
+  await assert.rejects(() => orderService.updateStatusAdmin("order-1", "CANCELLED"), ConflictError);
+  assert.equal(restock.mock.callCount(), 0);
+});
+
+test("updateStatusAdmin returns 404 for a missing order", async (t) => {
+  t.mock.method(orderRepository, "findByIdAdmin", async () => null);
+
+  await assert.rejects(() => orderService.updateStatusAdmin("x", "CONFIRMED"), NotFoundError);
+});
+
+test("admin order response exposes the next allowed statuses and the customer", async (t) => {
+  t.mock.method(orderRepository, "findByIdAdmin", async () => adminOrder({ status: "CONFIRMED" }));
+
+  const order = await orderService.getAdmin("order-1");
+
+  assert.deepEqual(order.allowedStatuses, ["SHIPPING", "CANCELLED"]);
+  assert.equal(order.customer.username, "khach");
+});
+
+test("buildAdminWhere uses Vietnam day boundaries and an inclusive end date", () => {
+  const where = orderRepository.buildAdminWhere({ from: "2026-11-05", to: "2026-11-05" });
+
+  assert.equal(where.createdAt.gte.toISOString(), "2026-11-04T17:00:00.000Z");
+  assert.equal(where.createdAt.lt.toISOString(), "2026-11-05T17:00:00.000Z");
+});
+
+test("buildAdminWhere searches code, phone and recipient name", () => {
+  const where = orderRepository.buildAdminWhere({ search: "090" });
+
+  assert.deepEqual(where.OR.map((clause) => Object.keys(clause)[0]), [
+    "code",
+    "shippingPhone",
+    "shippingName",
+  ]);
 });

@@ -11,6 +11,22 @@ const LINE_STATUS = {
   UNAVAILABLE: "UNAVAILABLE",
 };
 
+const ORDER_STATUS = {
+  PENDING: "PENDING",
+  CONFIRMED: "CONFIRMED",
+  SHIPPING: "SHIPPING",
+  COMPLETED: "COMPLETED",
+  CANCELLED: "CANCELLED",
+};
+
+const ALLOWED_TRANSITIONS = {
+  PENDING: [ORDER_STATUS.CONFIRMED, ORDER_STATUS.CANCELLED],
+  CONFIRMED: [ORDER_STATUS.SHIPPING, ORDER_STATUS.CANCELLED],
+  SHIPPING: [ORDER_STATUS.COMPLETED],
+  COMPLETED: [],
+  CANCELLED: [],
+};
+
 function getShippingConfig() {
   return {
     fee: new Decimal(process.env.SHIPPING_FEE ?? 30000),
@@ -190,26 +206,79 @@ class OrderService {
       throw new NotFoundError("Không tìm thấy đơn hàng");
     }
 
-    const order = await orderRepository.transaction(async (tx) => {
-      const cancelled = await orderRepository.markCancelled(id, tx);
+    if (existing.status !== ORDER_STATUS.PENDING) {
+      throw new ConflictError("Chỉ huỷ được đơn hàng đang chờ xác nhận");
+    }
 
-      if (!cancelled) {
-        throw new ConflictError("Chỉ huỷ được đơn hàng đang chờ xác nhận");
+    return this.toOrderResponse(await this.applyStatusChange(existing, ORDER_STATUS.CANCELLED));
+  }
+
+  async listAdmin({ page, limit, ...filters }) {
+    const skip = (page - 1) * limit;
+
+    const [items, total] = await Promise.all([
+      orderRepository.findManyAdmin({ ...filters, skip, take: limit }),
+      orderRepository.countAdmin(filters),
+    ]);
+
+    return {
+      items: items.map((order) => this.toAdminOrderResponse(order)),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit) || 1,
+      },
+    };
+  }
+
+  async getAdmin(id) {
+    const order = await orderRepository.findByIdAdmin(id);
+
+    if (!order) {
+      throw new NotFoundError("Không tìm thấy đơn hàng");
+    }
+
+    return this.toAdminOrderResponse(order);
+  }
+
+  async updateStatusAdmin(id, status) {
+    const existing = await orderRepository.findByIdAdmin(id);
+
+    if (!existing) {
+      throw new NotFoundError("Không tìm thấy đơn hàng");
+    }
+
+    if (!ALLOWED_TRANSITIONS[existing.status].includes(status)) {
+      throw new ConflictError("Không thể chuyển đơn hàng sang trạng thái này");
+    }
+
+    return this.toAdminOrderResponse(await this.applyStatusChange(existing, status));
+  }
+
+  // The single path for changing an order's status, so a cancel restocks
+  // whether the customer or an admin did it.
+  async applyStatusChange(order, status) {
+    await orderRepository.transaction(async (tx) => {
+      const changed = await orderRepository.transitionStatus(order.id, order.status, status, tx);
+
+      if (!changed) {
+        throw new ConflictError("Đơn hàng vừa được cập nhật, vui lòng tải lại");
       }
 
+      if (status !== ORDER_STATUS.CANCELLED) return;
+
       // Items of a since-deleted product have no stock left to return.
-      const restockable = existing.items
+      const restockable = order.items
         .filter((item) => item.productId)
         .sort((a, b) => a.productId.localeCompare(b.productId));
 
       for (const item of restockable) {
         await orderRepository.incrementStock(item.productId, item.quantity, tx);
       }
-
-      return { ...existing, status: "CANCELLED" };
     });
 
-    return this.toOrderResponse(order);
+    return { ...order, status, updatedAt: new Date() };
   }
 
   toQuoteResponse(quote) {
@@ -257,6 +326,14 @@ class OrderService {
       })),
       createdAt: order.createdAt,
       updatedAt: order.updatedAt,
+    };
+  }
+
+  toAdminOrderResponse(order) {
+    return {
+      ...this.toOrderResponse(order),
+      customer: order.user,
+      allowedStatuses: ALLOWED_TRANSITIONS[order.status],
     };
   }
 }

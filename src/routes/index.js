@@ -5,6 +5,9 @@ const categoryRoute = require("../modules/category/category.route");
 const productRoute = require("../modules/product/product.route");
 const publicRoute = require("../modules/public/public.route");
 const orderRoute = require("../modules/order/order.route");
+const adminOrderRoute = require("../modules/order/order.admin.route");
+const customerRoute = require("../modules/customer/customer.route");
+const dashboardRoute = require("../modules/dashboard/dashboard.route");
 
 const router = express.Router();
 
@@ -16,5 +19,8 @@ router.use("/auth", authRoute);
 router.use("/categories", categoryRoute);
 router.use("/products", productRoute);
 router.use("/orders", orderRoute);
+router.use("/admin/orders", adminOrderRoute);
+router.use("/admin/customers", customerRoute);
+router.use("/admin/dashboard", dashboardRoute);
 
 module.exports = router;

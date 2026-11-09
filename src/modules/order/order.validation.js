@@ -49,6 +49,26 @@ const listOrderSchema = z.object({
   limit: z.coerce.number().int().min(1).max(50).optional().default(10),
 });
 
+const ORDER_STATUSES = ["PENDING", "CONFIRMED", "SHIPPING", "COMPLETED", "CANCELLED"];
+
+const dateFilter = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, "Ngày không hợp lệ")
+  .optional();
+
+const listAdminOrderSchema = z.object({
+  page: z.coerce.number().int().min(1).optional().default(1),
+  limit: z.coerce.number().int().min(1).max(100).optional().default(10),
+  status: z.enum(ORDER_STATUSES, { error: "Trạng thái không hợp lệ" }).optional(),
+  from: dateFilter,
+  to: dateFilter,
+  search: z.string().trim().optional(),
+});
+
+const updateStatusSchema = z.object({
+  status: z.enum(ORDER_STATUSES, { error: "Trạng thái không hợp lệ" }),
+});
+
 function validate(schema, source, target) {
   return (req, res, next) => {
     const result = schema.safeParse(req[source]);
@@ -70,4 +90,6 @@ module.exports = {
   validateQuote: validate(quoteSchema, "body", "body"),
   validateCreateOrder: validate(createOrderSchema, "body", "body"),
   validateListOrder: validate(listOrderSchema, "query", "validatedQuery"),
+  validateListAdminOrder: validate(listAdminOrderSchema, "query", "validatedQuery"),
+  validateUpdateOrderStatus: validate(updateStatusSchema, "body", "body"),
 };
