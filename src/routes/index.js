@@ -8,6 +8,7 @@ const orderRoute = require("../modules/order/order.route");
 const adminOrderRoute = require("../modules/order/order.admin.route");
 const customerRoute = require("../modules/customer/customer.route");
 const dashboardRoute = require("../modules/dashboard/dashboard.route");
+const uploadRoute = require("../modules/upload/upload.route");
 
 const router = express.Router();
 
@@ -22,5 +23,6 @@ router.use("/orders", orderRoute);
 router.use("/admin/orders", adminOrderRoute);
 router.use("/admin/customers", customerRoute);
 router.use("/admin/dashboard", dashboardRoute);
+router.use("/admin/uploads", uploadRoute);
 
 module.exports = router;

@@ -5,6 +5,7 @@ const { validateCreateCategory } = require("../../src/modules/category/category.
 const {
   validateCreateProduct,
   validateUpdateProduct,
+  validateNextSku,
 } = require("../../src/modules/product/product.validation");
 const { validateRegister, validateLogin } = require("../../src/modules/auth/auth.validation");
 const { validateListPublicProduct } = require("../../src/modules/public/public.validation");
@@ -240,4 +241,29 @@ test("validateListPublicProduct applies defaults and rejects an unknown sort", (
   validateListPublicProduct(bad, res, () => {});
   assert.equal(res.statusCode, 400);
   assert.ok(res.body.errors.sort);
+});
+
+test("validateCreateProduct upper-cases and trims the SKU", () => {
+  const req = {
+    body: { name: "Pate", sku: "  st-tuna-70g ", price: 20000, categoryId: "8f14e45f-ceea-467f-a0e6-0e2c2f2b7a11" },
+  };
+  let called = false;
+  validateCreateProduct(req, mockRes(), () => {
+    called = true;
+  });
+
+  assert.equal(called, true);
+  assert.equal(req.body.sku, "ST-TUNA-70G");
+});
+
+test("validateNextSku upper-cases the prefix and rejects anything but letters/digits", () => {
+  const ok = { query: { prefix: "pat" } };
+  validateNextSku(ok, mockRes(), () => {});
+  assert.equal(ok.validatedQuery.prefix, "PAT");
+
+  const res = mockRes();
+  validateNextSku({ query: { prefix: "PA-T" } }, res, () => {
+    throw new Error("should not pass");
+  });
+  assert.equal(res.statusCode, 400);
 });

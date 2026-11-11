@@ -50,8 +50,17 @@ class ProductRepository {
     });
   }
 
+  // Case-insensitive so SKUs saved before upper-casing still count as taken.
   async findBySku(sku) {
-    return prisma.product.findUnique({ where: { sku } });
+    return prisma.product.findFirst({ where: { sku: { equals: sku, mode: "insensitive" } } });
+  }
+
+  async findSkusWithPrefix(prefix) {
+    const rows = await prisma.product.findMany({
+      where: { sku: { startsWith: `${prefix}-`, mode: "insensitive" } },
+      select: { sku: true },
+    });
+    return rows.map((row) => row.sku);
   }
 
   async create(data) {

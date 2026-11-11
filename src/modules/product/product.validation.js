@@ -2,7 +2,13 @@ const { z } = require("zod");
 
 const productFields = {
   name: z.string().trim().min(1, "Vui lòng nhập tên sản phẩm").max(255),
-  sku: z.string().trim().min(1, "Vui lòng nhập SKU").max(100),
+  // Stored upper-case whatever the client sends, so "st-01" and "ST-01" are one SKU.
+  sku: z
+    .string()
+    .trim()
+    .min(1, "Vui lòng nhập SKU")
+    .max(100)
+    .transform((value) => value.toUpperCase()),
   price: z.coerce.number().nonnegative("Giá phải lớn hơn hoặc bằng 0"),
   quantity: z.coerce.number().int().nonnegative("Số lượng phải lớn hơn hoặc bằng 0"),
   imageUrl: z.string().trim().max(1000).optional().nullable(),
@@ -42,6 +48,14 @@ const listProductSchema = z.object({
   sortDir: z.enum(["asc", "desc"]).optional().default("desc"),
 });
 
+const nextSkuSchema = z.object({
+  prefix: z
+    .string()
+    .trim()
+    .transform((value) => value.toUpperCase())
+    .pipe(z.string().regex(/^[A-Z0-9]{1,10}$/, "Tiền tố SKU chỉ gồm 1–10 chữ hoặc số")),
+});
+
 function validate(schema, source) {
   return (req, res, next) => {
     const result = schema.safeParse(req[source]);
@@ -72,4 +86,5 @@ module.exports = {
   validateUpdateProduct: validate(updateProductSchema, "body"),
   validateUpdateStatus: validate(updateStatusSchema, "body"),
   validateListProduct: validate(listProductSchema, "query"),
+  validateNextSku: validate(nextSkuSchema, "query"),
 };

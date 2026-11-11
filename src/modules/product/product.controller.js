@@ -15,6 +15,16 @@ class ProductController {
     }
   }
 
+  async nextSku(req, res, next) {
+    try {
+      const sku = await productService.nextSku(req.validatedQuery.prefix);
+
+      return res.status(200).json({ message: "Gợi ý SKU thành công", data: { sku } });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
   async getById(req, res, next) {
     try {
       const product = await productService.getById(req.params.id);

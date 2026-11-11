@@ -2,6 +2,19 @@ const productRepository = require("./product.repository");
 const categoryRepository = require("../category/category.repository");
 const { NotFoundError, BadRequestError, ConflictError } = require("../../utils/errors");
 
+// Two admins saving the same SKU at once both pass the lookup; the unique
+// index catches the second one, which should still read "SKU đã tồn tại".
+async function withSkuConflict(write) {
+  try {
+    return await write();
+  } catch (error) {
+    if (error?.code === "P2002" && String(error.meta?.target ?? "").includes("sku")) {
+      throw new ConflictError("SKU đã tồn tại");
+    }
+    throw error;
+  }
+}
+
 class ProductService {
   async assertCategoryExists(categoryId) {
     const category = await categoryRepository.findById(categoryId);
@@ -55,7 +68,7 @@ class ProductService {
       throw new ConflictError("SKU đã tồn tại");
     }
 
-    const product = await productRepository.create({
+    const product = await withSkuConflict(() => productRepository.create({
       name: data.name,
       sku: data.sku,
       price: data.price,
@@ -64,9 +77,20 @@ class ProductService {
       description: data.description ?? null,
       isActive: data.isActive ?? true,
       categoryId: data.categoryId,
-    });
+    }));
 
     return this.toResponse(product);
+  }
+
+  // Next free "PREFIX-0001"-style SKU across every product, not just one page.
+  async nextSku(prefix) {
+    const pattern = new RegExp(`^${prefix}-(\\d+)$`, "i");
+    const highest = (await productRepository.findSkusWithPrefix(prefix)).reduce((max, sku) => {
+      const match = sku.match(pattern);
+      return match ? Math.max(max, Number(match[1])) : max;
+    }, 0);
+
+    return `${prefix}-${String(highest + 1).padStart(4, "0")}`;
   }
 
   async update(id, data) {
@@ -87,7 +111,7 @@ class ProductService {
       }
     }
 
-    const product = await productRepository.update(id, data);
+    const product = await withSkuConflict(() => productRepository.update(id, data));
     return this.toResponse(product);
   }
 

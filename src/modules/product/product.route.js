@@ -9,6 +9,7 @@ const {
   validateUpdateProduct,
   validateUpdateStatus,
   validateListProduct,
+  validateNextSku,
 } = require("./product.validation");
 
 const router = express.Router();
@@ -18,6 +19,11 @@ const canManageProduct = authorize("SUPER_ADMIN", "ADMIN");
 // Read endpoints: any authenticated user (dashboard staff, future storefront) can browse products.
 router.get("/", authMiddleware, validateListProduct, (req, res, next) =>
   productController.list(req, res, next)
+);
+
+// Declared before "/:id" so "next-sku" is not read as a product id.
+router.get("/next-sku", authMiddleware, canManageProduct, validateNextSku, (req, res, next) =>
+  productController.nextSku(req, res, next)
 );
 
 router.get("/:id", authMiddleware, (req, res, next) =>

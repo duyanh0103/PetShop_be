@@ -129,3 +129,34 @@ test("setActiveStatus updates only isActive and returns the mapped product", asy
   assert.equal(result.isActive, false);
   assert.deepEqual(updateMock.mock.calls[0].arguments, ["prod-1", { isActive: false }]);
 });
+
+test("nextSku continues after the highest number across all products with that prefix", async (t) => {
+  t.mock.method(productRepository, "findSkusWithPrefix", async () => [
+    "PAT-0002",
+    "pat-0015",
+    "PAT-0009",
+    "PAT-SPECIAL",
+    "PAT-12-A",
+  ]);
+
+  assert.equal(await productService.nextSku("PAT"), "PAT-0016");
+});
+
+test("nextSku starts at 0001 when the prefix is unused", async (t) => {
+  t.mock.method(productRepository, "findSkusWithPrefix", async () => []);
+
+  assert.equal(await productService.nextSku("DOC"), "DOC-0001");
+});
+
+test("create reports a unique-index race on sku as ConflictError", async (t) => {
+  t.mock.method(categoryRepository, "findById", async () => ({ id: "cat-1" }));
+  t.mock.method(productRepository, "findBySku", async () => null);
+  t.mock.method(productRepository, "create", async () => {
+    throw Object.assign(new Error("Unique constraint failed"), { code: "P2002", meta: { target: ["sku"] } });
+  });
+
+  await assert.rejects(
+    () => productService.create({ name: "Pate", sku: "PAT-0001", price: 1, categoryId: "cat-1" }),
+    (error) => error instanceof ConflictError && error.message === "SKU đã tồn tại"
+  );
+});
