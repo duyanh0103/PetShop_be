@@ -1,5 +1,13 @@
 const prisma = require("../../configs/prisma");
 
+// Primary category (legacy column) plus every linked category/brand.
+const categoryInclude = {
+  category: { select: { id: true, name: true, slug: true } },
+  categories: {
+    select: { category: { select: { id: true, name: true, slug: true, type: true } } },
+  },
+};
+
 class ProductRepository {
   buildWhere({ search, categoryId, isActive }) {
     const where = {};
@@ -12,7 +20,7 @@ class ProductRepository {
     }
 
     if (categoryId) {
-      where.categoryId = categoryId;
+      where.categories = { some: { categoryId } };
     }
 
     if (typeof isActive === "boolean") {
@@ -30,9 +38,7 @@ class ProductRepository {
       skip,
       take,
       orderBy: { [sortBy]: sortDir },
-      include: {
-        category: { select: { id: true, name: true, slug: true } },
-      },
+      include: categoryInclude,
     });
   }
 
@@ -44,9 +50,7 @@ class ProductRepository {
   async findById(id) {
     return prisma.product.findUnique({
       where: { id },
-      include: {
-        category: { select: { id: true, name: true, slug: true } },
-      },
+      include: categoryInclude,
     });
   }
 
@@ -63,22 +67,32 @@ class ProductRepository {
     return rows.map((row) => row.sku);
   }
 
-  async create(data) {
+  // categoryIds[0] is stored as the primary category so the legacy column stays valid.
+  async create({ categoryIds, ...data }) {
     return prisma.product.create({
-      data,
-      include: {
-        category: { select: { id: true, name: true, slug: true } },
+      data: {
+        ...data,
+        categoryId: categoryIds[0],
+        categories: { create: categoryIds.map((categoryId) => ({ categoryId })) },
       },
+      include: categoryInclude,
     });
   }
 
-  async update(id, data) {
+  async update(id, { categoryIds, ...data }) {
     return prisma.product.update({
       where: { id },
-      data,
-      include: {
-        category: { select: { id: true, name: true, slug: true } },
-      },
+      data: categoryIds
+        ? {
+            ...data,
+            categoryId: categoryIds[0],
+            categories: {
+              deleteMany: {},
+              create: categoryIds.map((categoryId) => ({ categoryId })),
+            },
+          }
+        : data,
+      include: categoryInclude,
     });
   }
 

@@ -15,10 +15,10 @@ class OrderRepository {
     return prisma.$transaction(work, { maxWait: 5000, timeout: 10000 });
   }
 
-  // Same visibility rule as the storefront: the product and its category must be active.
+  // Same visibility rule as the storefront: the product and at least one of its categories must be active.
   async findSellableProducts(ids) {
     return prisma.product.findMany({
-      where: { id: { in: ids }, isActive: true, category: { isActive: true } },
+      where: { id: { in: ids }, isActive: true, categories: { some: { category: { isActive: true } } } },
     });
   }
 

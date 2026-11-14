@@ -1,19 +1,28 @@
 const prisma = require("../../configs/prisma");
 
 const categorySelect = { select: { id: true, name: true, slug: true } };
+const productInclude = {
+  category: categorySelect,
+  categories: {
+    where: { category: { isActive: true } },
+    select: { category: { select: { id: true, name: true, slug: true, type: true } } },
+  },
+};
+
+// Visible when at least one linked category is active (and, if filtering, matches the slug).
+function visibleCategory(categorySlug) {
+  return {
+    categories: {
+      some: { category: { isActive: true, ...(categorySlug && { slug: categorySlug }) } },
+    },
+  };
+}
 
 class PublicRepository {
-  // A product is visible on the storefront only when both it and its
-  // category are active.
+  // A product is visible on the storefront only when it is active and at
+  // least one of its categories is active.
   buildProductWhere({ search, categorySlug }) {
-    const where = {
-      isActive: true,
-      category: { isActive: true },
-    };
-
-    if (categorySlug) {
-      where.category.slug = categorySlug;
-    }
+    const where = { isActive: true, ...visibleCategory(categorySlug) };
 
     if (search) {
       where.name = { contains: search, mode: "insensitive" };
@@ -36,7 +45,7 @@ class PublicRepository {
       take,
       // Tie-break on id so pagination stays stable when sort keys collide.
       orderBy: [orderBy, { id: "asc" }],
-      include: { category: categorySelect },
+      include: productInclude,
     });
   }
 
@@ -48,8 +57,8 @@ class PublicRepository {
 
   async findProductById(id) {
     return prisma.product.findFirst({
-      where: { id, isActive: true, category: { isActive: true } },
-      include: { category: categorySelect },
+      where: { id, isActive: true, ...visibleCategory() },
+      include: productInclude,
     });
   }
 }

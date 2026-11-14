@@ -6,8 +6,8 @@ const categoryRepository = require("../../src/modules/category/category.reposito
 const productService = require("../../src/modules/product/product.service");
 const { NotFoundError, BadRequestError, ConflictError } = require("../../src/utils/errors");
 
-test("create throws BadRequestError when categoryId does not reference an existing category", async (t) => {
-  t.mock.method(categoryRepository, "findById", async () => null);
+test("create throws BadRequestError when some category does not exist", async (t) => {
+  t.mock.method(categoryRepository, "findManyByIds", async () => []);
 
   await assert.rejects(
     () =>
@@ -16,14 +16,14 @@ test("create throws BadRequestError when categoryId does not reference an existi
         sku: "TOY-001",
         price: 10,
         quantity: 5,
-        categoryId: "missing-category",
+        categoryIds: ["missing-category"],
       }),
     BadRequestError
   );
 });
 
 test("create throws ConflictError when the SKU is already taken", async (t) => {
-  t.mock.method(categoryRepository, "findById", async () => ({ id: "cat-1" }));
+  t.mock.method(categoryRepository, "findManyByIds", async () => [{ id: "cat-1" }]);
   t.mock.method(productRepository, "findBySku", async () => ({ id: "existing-product" }));
 
   await assert.rejects(
@@ -33,14 +33,14 @@ test("create throws ConflictError when the SKU is already taken", async (t) => {
         sku: "TOY-001",
         price: 10,
         quantity: 5,
-        categoryId: "cat-1",
+        categoryIds: ["cat-1"],
       }),
     ConflictError
   );
 });
 
 test("create returns the product with price coerced to a Number", async (t) => {
-  t.mock.method(categoryRepository, "findById", async () => ({ id: "cat-1" }));
+  t.mock.method(categoryRepository, "findManyByIds", async () => [{ id: "cat-1" }]);
   t.mock.method(productRepository, "findBySku", async () => null);
   t.mock.method(productRepository, "create", async (data) => ({
     id: "prod-1",
@@ -57,7 +57,7 @@ test("create returns the product with price coerced to a Number", async (t) => {
     sku: "TOY-001",
     price: 19.99,
     quantity: 5,
-    categoryId: "cat-1",
+    categoryIds: ["cat-1"],
   });
 
   assert.equal(result.price, 19.99);
@@ -149,14 +149,14 @@ test("nextSku starts at 0001 when the prefix is unused", async (t) => {
 });
 
 test("create reports a unique-index race on sku as ConflictError", async (t) => {
-  t.mock.method(categoryRepository, "findById", async () => ({ id: "cat-1" }));
+  t.mock.method(categoryRepository, "findManyByIds", async () => [{ id: "cat-1" }]);
   t.mock.method(productRepository, "findBySku", async () => null);
   t.mock.method(productRepository, "create", async () => {
     throw Object.assign(new Error("Unique constraint failed"), { code: "P2002", meta: { target: ["sku"] } });
   });
 
   await assert.rejects(
-    () => productService.create({ name: "Pate", sku: "PAT-0001", price: 1, categoryId: "cat-1" }),
+    () => productService.create({ name: "Pate", sku: "PAT-0001", price: 1, categoryIds: ["cat-1"] }),
     (error) => error instanceof ConflictError && error.message === "SKU đã tồn tại"
   );
 });

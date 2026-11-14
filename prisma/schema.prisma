@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider  = "postgresql"
   url       = env("DATABASE_URL")
   // Migrations go through Neon's direct (non-pooled) endpoint.
   directUrl = env("DIRECT_URL")
@@ -45,34 +45,54 @@ model User {
   orders    Order[]
 }
 
+enum CategoryType {
+  CATEGORY
+  BRAND
+}
+
 model Category {
-  id          String    @id @default(uuid())
-  name        String
-  slug        String    @unique
-  description String?
-  imageUrl    String?
-  isActive    Boolean   @default(true)
-  sortOrder   Int       @default(0)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  products    Product[]
+  id           String            @id @default(uuid())
+  name         String
+  slug         String            @unique
+  description  String?
+  imageUrl     String?
+  type         CategoryType      @default(CATEGORY)
+  isActive     Boolean           @default(true)
+  sortOrder    Int               @default(0)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  // Legacy: Product.categoryId is the primary category (first of categoryIds).
+  products     Product[]
+  productLinks ProductCategory[]
 
   @@index([isActive])
 }
 
+// Many-to-many: a product can sit in several categories/brands.
+model ProductCategory {
+  productId  String
+  categoryId String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  @@id([productId, categoryId])
+  @@index([categoryId])
+}
+
 model Product {
-  id          String   @id @default(uuid())
+  id          String            @id @default(uuid())
   name        String
-  sku         String   @unique
+  sku         String            @unique
   price       Decimal
   quantity    Int
   imageUrl    String?
   description String?
-  isActive    Boolean  @default(true)
+  isActive    Boolean           @default(true)
   categoryId  String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  category    Category @relation(fields: [categoryId], references: [id])
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  category    Category          @relation(fields: [categoryId], references: [id])
+  categories  ProductCategory[]
   orderItems  OrderItem[]
 
   @@index([isActive])

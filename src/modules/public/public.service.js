@@ -50,6 +50,7 @@ class PublicService {
       slug: category.slug,
       description: category.description,
       imageUrl: category.imageUrl,
+      type: category.type,
     };
   }
 
@@ -71,6 +72,7 @@ class PublicService {
             slug: product.category.slug,
           }
         : null,
+      categories: (product.categories ?? []).map((link) => link.category),
     };
   }
 }

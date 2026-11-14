@@ -16,9 +16,9 @@ async function withSkuConflict(write) {
 }
 
 class ProductService {
-  async assertCategoryExists(categoryId) {
-    const category = await categoryRepository.findById(categoryId);
-    if (!category) {
+  async assertCategoriesExist(categoryIds) {
+    const found = await categoryRepository.findManyByIds(categoryIds);
+    if (found.length !== categoryIds.length) {
       throw new BadRequestError("Danh mục không tồn tại");
     }
   }
@@ -61,7 +61,7 @@ class ProductService {
   }
 
   async create(data) {
-    await this.assertCategoryExists(data.categoryId);
+    await this.assertCategoriesExist(data.categoryIds);
 
     const existingSku = await productRepository.findBySku(data.sku);
     if (existingSku) {
@@ -76,7 +76,7 @@ class ProductService {
       imageUrl: data.imageUrl ?? null,
       description: data.description ?? null,
       isActive: data.isActive ?? true,
-      categoryId: data.categoryId,
+      categoryIds: data.categoryIds,
     }));
 
     return this.toResponse(product);
@@ -101,7 +101,7 @@ class ProductService {
     }
 
     if (data.categoryId && data.categoryId !== existing.categoryId) {
-      await this.assertCategoryExists(data.categoryId);
+      await this.assertCategoriesExist(data.categoryIds);
     }
 
     if (data.sku && data.sku !== existing.sku) {
@@ -155,6 +155,8 @@ class ProductService {
             slug: product.category.slug,
           }
         : undefined,
+      categoryIds: product.categories?.map((link) => link.category.id),
+      categories: product.categories?.map((link) => link.category),
       createdAt: product.createdAt,
       updatedAt: product.updatedAt,
     };

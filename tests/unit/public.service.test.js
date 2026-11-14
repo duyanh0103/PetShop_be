@@ -20,10 +20,13 @@ const PRODUCT_ROW = {
   updatedAt: new Date(),
 };
 
-test("buildProductWhere always requires the product and its category to be active", () => {
+test("buildProductWhere requires an active product with at least one active category", () => {
   const where = publicRepository.buildProductWhere({});
 
-  assert.deepEqual(where, { isActive: true, category: { isActive: true } });
+  assert.deepEqual(where, {
+    isActive: true,
+    categories: { some: { category: { isActive: true } } },
+  });
 });
 
 test("buildProductWhere filters by category slug and name search", () => {
@@ -32,7 +35,9 @@ test("buildProductWhere filters by category slug and name search", () => {
     categorySlug: "thuc-an-cho-cho",
   });
 
-  assert.deepEqual(where.category, { isActive: true, slug: "thuc-an-cho-cho" });
+  assert.deepEqual(where.categories, {
+    some: { category: { isActive: true, slug: "thuc-an-cho-cho" } },
+  });
   assert.deepEqual(where.name, { contains: "royal", mode: "insensitive" });
 });
 
@@ -78,6 +83,7 @@ test("listCategories returns only storefront fields", async (t) => {
       slug: "phu-kien",
       description: null,
       imageUrl: null,
+      type: "CATEGORY",
       isActive: true,
       sortOrder: 0,
     },
@@ -85,5 +91,5 @@ test("listCategories returns only storefront fields", async (t) => {
 
   const [category] = await publicService.listCategories();
 
-  assert.deepEqual(Object.keys(category), ["id", "name", "slug", "description", "imageUrl"]);
+  assert.deepEqual(Object.keys(category), ["id", "name", "slug", "description", "imageUrl", "type"]);
 });

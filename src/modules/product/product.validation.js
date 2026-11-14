@@ -14,7 +14,12 @@ const productFields = {
   imageUrl: z.string().trim().max(1000).optional().nullable(),
   description: z.string().trim().max(2000).optional().nullable(),
   isActive: z.boolean(),
-  categoryId: z.string().uuid("Danh mục không hợp lệ"),
+  // First id is the primary category; duplicates are dropped.
+  categoryIds: z
+    .array(z.string().uuid("Danh mục không hợp lệ"), { error: "Vui lòng chọn danh mục" })
+    .min(1, "Vui lòng chọn ít nhất 1 danh mục")
+    .max(10, "Tối đa 10 danh mục")
+    .transform((ids) => [...new Set(ids)]),
 };
 
 const createProductSchema = z.object({

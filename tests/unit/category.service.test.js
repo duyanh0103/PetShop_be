@@ -20,7 +20,7 @@ test("getById returns the mapped category when found", async (t) => {
     imageUrl: null,
     isActive: true,
     sortOrder: 0,
-    _count: { products: 3 },
+    _count: { productLinks: 3 },
     createdAt: new Date("2026-01-01"),
     updatedAt: new Date("2026-01-01"),
   }));

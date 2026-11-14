@@ -25,19 +25,20 @@ class CategoryService {
     }
   }
 
-  async list({ page, limit, search, isActive, sortBy, sortDir }) {
+  async list({ page, limit, search, isActive, type, sortBy, sortDir }) {
     const skip = (page - 1) * limit;
 
     const [items, total] = await Promise.all([
       categoryRepository.findMany({
         search,
         isActive,
+        type,
         skip,
         take: limit,
         sortBy,
         sortDir,
       }),
-      categoryRepository.count({ search, isActive }),
+      categoryRepository.count({ search, isActive, type }),
     ]);
 
     return {
@@ -79,6 +80,7 @@ class CategoryService {
       slug,
       description: data.description ?? null,
       imageUrl: data.imageUrl ?? null,
+      type: data.type ?? "CATEGORY",
       isActive: data.isActive ?? true,
       sortOrder: data.sortOrder ?? 0,
     });
@@ -146,9 +148,10 @@ class CategoryService {
       slug: category.slug,
       description: category.description,
       imageUrl: category.imageUrl,
+      type: category.type,
       isActive: category.isActive,
       sortOrder: category.sortOrder,
-      productCount: category._count ? category._count.products : undefined,
+      productCount: category._count ? category._count.productLinks : undefined,
       createdAt: category.createdAt,
       updatedAt: category.updatedAt,
     };

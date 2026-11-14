@@ -1,8 +1,12 @@
 const prisma = require("../../configs/prisma");
 
 class CategoryRepository {
-  buildWhere({ search, isActive }) {
+  buildWhere({ search, isActive, type }) {
     const where = {};
+
+    if (type) {
+      where.type = type;
+    }
 
     if (search) {
       where.name = { contains: search, mode: "insensitive" };
@@ -15,8 +19,8 @@ class CategoryRepository {
     return where;
   }
 
-  async findMany({ search, isActive, skip, take, sortBy, sortDir }) {
-    const where = this.buildWhere({ search, isActive });
+  async findMany({ search, isActive, type, skip, take, sortBy, sortDir }) {
+    const where = this.buildWhere({ search, isActive, type });
 
     return prisma.category.findMany({
       where,
@@ -24,13 +28,13 @@ class CategoryRepository {
       take,
       orderBy: { [sortBy]: sortDir },
       include: {
-        _count: { select: { products: true } },
+        _count: { select: { productLinks: true } },
       },
     });
   }
 
-  async count({ search, isActive }) {
-    const where = this.buildWhere({ search, isActive });
+  async count({ search, isActive, type }) {
+    const where = this.buildWhere({ search, isActive, type });
     return prisma.category.count({ where });
   }
 
@@ -38,9 +42,13 @@ class CategoryRepository {
     return prisma.category.findUnique({
       where: { id },
       include: {
-        _count: { select: { products: true } },
+        _count: { select: { productLinks: true } },
       },
     });
+  }
+
+  async findManyByIds(ids) {
+    return prisma.category.findMany({ where: { id: { in: ids } }, select: { id: true } });
   }
 
   async findBySlug(slug) {
@@ -60,7 +68,7 @@ class CategoryRepository {
   }
 
   async countProducts(id) {
-    return prisma.product.count({ where: { categoryId: id } });
+    return prisma.productCategory.count({ where: { categoryId: id } });
   }
 }
 

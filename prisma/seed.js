@@ -102,6 +102,7 @@ async function seedCatalog() {
           price: productData.price,
           quantity: productData.quantity,
           categoryId: category.id,
+          categories: { create: [{ categoryId: category.id }] },
         },
       });
 

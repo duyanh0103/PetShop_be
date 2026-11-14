@@ -51,9 +51,9 @@ test("validateCreateCategory accepts a valid payload and normalizes it", () => {
   assert.equal(req.body.sortOrder, 5);
 });
 
-test("validateCreateProduct rejects an invalid categoryId (not a UUID)", () => {
+test("validateCreateProduct rejects an invalid category id (not a UUID)", () => {
   const req = {
-    body: { name: "Toy", sku: "SKU-1", price: 10, categoryId: "not-a-uuid" },
+    body: { name: "Toy", sku: "SKU-1", price: 10, categoryIds: ["not-a-uuid"] },
   };
   const res = mockRes();
   let nextCalled = false;
@@ -64,7 +64,7 @@ test("validateCreateProduct rejects an invalid categoryId (not a UUID)", () => {
 
   assert.equal(nextCalled, false);
   assert.equal(res.statusCode, 400);
-  assert.ok(res.body.errors.categoryId);
+  assert.ok(res.body.errors.categoryIds);
 });
 
 test("validateCreateProduct accepts a valid payload and coerces price/quantity to numbers", () => {
@@ -74,7 +74,7 @@ test("validateCreateProduct accepts a valid payload and coerces price/quantity t
       sku: "SKU-1",
       price: "19.99",
       quantity: "3",
-      categoryId: "11111111-1111-4111-8111-111111111111",
+      categoryIds: ["11111111-1111-4111-8111-111111111111"],
     },
   };
   const res = mockRes();
@@ -95,7 +95,7 @@ test("validateCreateProduct rejects a negative price", () => {
       name: "Toy",
       sku: "SKU-1",
       price: -5,
-      categoryId: "11111111-1111-4111-8111-111111111111",
+      categoryIds: ["11111111-1111-4111-8111-111111111111"],
     },
   };
   const res = mockRes();
@@ -167,7 +167,7 @@ test("validateCreateProduct defaults quantity to 0 and isActive to true", () => 
       name: "Dog Toy",
       sku: "TOY-001",
       price: 10,
-      categoryId: "11111111-1111-4111-8111-111111111111",
+      categoryIds: ["11111111-1111-4111-8111-111111111111"],
     },
   };
   const res = mockRes();
@@ -245,7 +245,7 @@ test("validateListPublicProduct applies defaults and rejects an unknown sort", (
 
 test("validateCreateProduct upper-cases and trims the SKU", () => {
   const req = {
-    body: { name: "Pate", sku: "  st-tuna-70g ", price: 20000, categoryId: "8f14e45f-ceea-467f-a0e6-0e2c2f2b7a11" },
+    body: { name: "Pate", sku: "  st-tuna-70g ", price: 20000, categoryIds: ["8f14e45f-ceea-467f-a0e6-0e2c2f2b7a11"] },
   };
   let called = false;
   validateCreateProduct(req, mockRes(), () => {
@@ -266,4 +266,21 @@ test("validateNextSku upper-cases the prefix and rejects anything but letters/di
     throw new Error("should not pass");
   });
   assert.equal(res.statusCode, 400);
+});
+
+
+test("validateCreateProduct requires at least one category and drops duplicate ids", () => {
+  const id = "11111111-1111-4111-8111-111111111111";
+
+  const empty = mockRes();
+  validateCreateProduct({ body: { name: "Toy", sku: "SKU-1", price: 10, categoryIds: [] } }, empty, () => {});
+  assert.equal(empty.statusCode, 400);
+
+  const req = { body: { name: "Toy", sku: "SKU-1", price: 10, categoryIds: [id, id] } };
+  let nextCalled = false;
+  validateCreateProduct(req, mockRes(), () => {
+    nextCalled = true;
+  });
+  assert.equal(nextCalled, true);
+  assert.deepEqual(req.body.categoryIds, [id]);
 });
