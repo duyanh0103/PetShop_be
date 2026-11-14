@@ -34,3 +34,7 @@ services:
         sync: false
       - key: CLOUDINARY_FOLDER
         value: cuc-meow/prod
+      - key: SEED_SUPER_ADMIN_USERNAME # chỉ dùng khi chạy `npm run seed:admin`; có thể xoá sau khi seed
+        sync: false
+      - key: SEED_SUPER_ADMIN_PASSWORD
+        sync: false
